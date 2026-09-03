@@ -5,8 +5,9 @@
   "packageManager": "pnpm@11.1.1",
   "scripts": {
     "dev": "nx run-many -t dev",
-    "dev:backend": "nx run backend:dev",
     "dev:frontend": "nx run frontend:dev",
+    "dev:backend": "nx run backend:dev",
+    "dev:db": "nx run db-service:dev",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint"

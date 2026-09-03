@@ -3,13 +3,11 @@ dotenv.config();
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { db, sqlite } from './db';
-import { items } from './db/schema';
-import { eq } from 'drizzle-orm';
-import type { HealthResponse, CreateItemDto, UpdateItemDto } from '@proj/shared';
+import type { HealthResponse, DbServiceHealth, CreateItemDto, UpdateItemDto, Item } from '@proj/shared';
 
 const port = Number(process.env.PORT) || 3001;
 const host = process.env.HOST || '0.0.0.0';
+const dbServiceUrl = process.env.DB_SERVICE_URL || 'http://localhost:3002';
 
 export function buildApp() {
   const fastify = Fastify({
@@ -20,94 +18,102 @@ export function buildApp() {
     origin: true,
   });
 
-  // Health endpoint
+  // Health endpoint: checks backend health and polls DB service health
   fastify.get<{ Reply: HealthResponse }>('/api/health', async () => {
-    let dbStatus: 'connected' | 'disconnected' = 'disconnected';
+    let dbHealth: DbServiceHealth | undefined;
+    let databaseStatus: 'connected' | 'disconnected' = 'disconnected';
+
     try {
-      const check = sqlite.prepare('SELECT 1 as alive').get() as { alive: number };
-      if (check.alive === 1) dbStatus = 'connected';
+      const res = await fetch(`${dbServiceUrl}/health`);
+      if (res.ok) {
+        dbHealth = (await res.json()) as DbServiceHealth;
+        databaseStatus = dbHealth.database;
+      }
     } catch {
-      dbStatus = 'disconnected';
+      databaseStatus = 'disconnected';
     }
 
     return {
-      status: 'ok',
+      status: databaseStatus === 'connected' ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       port,
-      database: dbStatus,
+      database: databaseStatus,
+      dbService: dbHealth,
     };
   });
 
-  // Get all items
-  fastify.get('/api/items', async () => {
-    const allItems = await db.select().from(items);
-    return allItems;
-  });
-
-  // Get item by ID
-  fastify.get<{ Params: { id: string } }>('/api/items/:id', async (request, reply) => {
-    const id = Number(request.params.id);
-    const result = await db.select().from(items).where(eq(items.id, id));
-    if (result.length === 0) {
-      return reply.status(404).send({ error: 'Item not found' });
+  // Get all items from DB service
+  fastify.get('/api/items', async (_request, reply) => {
+    try {
+      const res = await fetch(`${dbServiceUrl}/items`);
+      if (!res.ok) {
+        return reply.status(res.status).send(await res.text());
+      }
+      const data: Item[] = await res.json();
+      return reply.send(data);
+    } catch (err) {
+      return reply.status(502).send({ error: 'Failed to connect to Database Service', details: String(err) });
     }
-    return result[0];
   });
 
-  // Create item
+  // Get item by ID from DB service
+  fastify.get<{ Params: { id: string } }>('/api/items/:id', async (request, reply) => {
+    try {
+      const res = await fetch(`${dbServiceUrl}/items/${request.params.id}`);
+      const data = await res.json();
+      return reply.status(res.status).send(data);
+    } catch (err) {
+      return reply.status(502).send({ error: 'Failed to connect to Database Service', details: String(err) });
+    }
+  });
+
+  // Create item via DB service
   fastify.post<{ Body: CreateItemDto }>('/api/items', async (request, reply) => {
     const { title, description } = request.body;
     if (!title || typeof title !== 'string') {
       return reply.status(400).send({ error: 'Title is required' });
     }
 
-    const inserted = await db
-      .insert(items)
-      .values({
-        title,
-        description: description || '',
-        completed: false,
-        createdAt: new Date().toISOString(),
-      })
-      .returning();
-
-    return reply.status(201).send(inserted[0]);
+    try {
+      const res = await fetch(`${dbServiceUrl}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description }),
+      });
+      const data = await res.json();
+      return reply.status(res.status).send(data);
+    } catch (err) {
+      return reply.status(502).send({ error: 'Failed to connect to Database Service', details: String(err) });
+    }
   });
 
-  // Update item
+  // Update item via DB service
   fastify.patch<{ Params: { id: string }; Body: UpdateItemDto }>('/api/items/:id', async (request, reply) => {
-    const id = Number(request.params.id);
-    const { title, description, completed } = request.body;
-
-    const existing = await db.select().from(items).where(eq(items.id, id));
-    if (existing.length === 0) {
-      return reply.status(404).send({ error: 'Item not found' });
+    try {
+      const res = await fetch(`${dbServiceUrl}/items/${request.params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request.body),
+      });
+      const data = await res.json();
+      return reply.status(res.status).send(data);
+    } catch (err) {
+      return reply.status(502).send({ error: 'Failed to connect to Database Service', details: String(err) });
     }
-
-    const updated = await db
-      .update(items)
-      .set({
-        ...(title !== undefined && { title }),
-        ...(description !== undefined && { description }),
-        ...(completed !== undefined && { completed }),
-      })
-      .where(eq(items.id, id))
-      .returning();
-
-    return updated[0];
   });
 
-  // Delete item
+  // Delete item via DB service
   fastify.delete<{ Params: { id: string } }>('/api/items/:id', async (request, reply) => {
-    const id = Number(request.params.id);
-    const existing = await db.select().from(items).where(eq(items.id, id));
-    if (existing.length === 0) {
-      return reply.status(404).send({ error: 'Item not found' });
+    try {
+      const res = await fetch(`${dbServiceUrl}/items/${request.params.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      return reply.status(res.status).send(data);
+    } catch (err) {
+      return reply.status(502).send({ error: 'Failed to connect to Database Service', details: String(err) });
     }
-
-    await db.delete(items).where(eq(items.id, id));
-    return { success: true, id };
   });
 
   return fastify;
@@ -120,7 +126,7 @@ if (require.main === module || process.env.NODE_ENV !== 'test') {
       console.error(err);
       process.exit(1);
     }
-    console.log(`🚀 Backend server listening at ${address}`);
-    console.log(`📊 SQLite database connected: ${process.env.DATABASE_URL || './data/app.db'}`);
+    console.log(`🚀 Backend API server listening at ${address}`);
+    console.log(`🔗 Database Service URL: ${dbServiceUrl}`);
   });
 }

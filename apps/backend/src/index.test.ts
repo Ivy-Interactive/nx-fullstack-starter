@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { buildApp } from './index';
 import type { FastifyInstance } from 'fastify';
 
@@ -15,7 +15,19 @@ describe('Backend API Integration', () => {
     await app.close();
   });
 
-  it('GET /api/health returns ok status and db connected', async () => {
+  it('GET /api/health queries DB service and returns aggregated health', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        service: 'db-service',
+        status: 'ok',
+        port: 3002,
+        database: 'connected',
+        timestamp: new Date().toISOString(),
+        uptime: 12.3,
+      }),
+    }));
+
     const response = await app.inject({
       method: 'GET',
       url: '/api/health',
@@ -25,10 +37,16 @@ describe('Backend API Integration', () => {
     const body = JSON.parse(response.body);
     expect(body.status).toBe('ok');
     expect(body.database).toBe('connected');
-    expect(typeof body.port).toBe('number');
+    expect(body.dbService?.service).toBe('db-service');
   });
 
-  it('GET /api/items returns an array of items', async () => {
+  it('GET /api/items forwards requests to DB service', async () => {
+    const mockItems = [{ id: 1, title: 'Item from DB service', completed: false }];
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockItems,
+    }));
+
     const response = await app.inject({
       method: 'GET',
       url: '/api/items',
@@ -36,23 +54,28 @@ describe('Backend API Integration', () => {
 
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
-    expect(Array.isArray(body)).toBe(true);
-    expect(body.length).toBeGreaterThanOrEqual(1);
+    expect(body).toEqual(mockItems);
   });
 
-  it('POST /api/items creates a new item', async () => {
+  it('POST /api/items validates title and forwards to DB service', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/items',
-      payload: {
-        title: 'Test Created Item',
-        description: 'Testing SQLite insert',
-      },
+      payload: {},
     });
+    expect(response.statusCode).toBe(400);
 
-    expect(response.statusCode).toBe(201);
-    const item = JSON.parse(response.body);
-    expect(item.title).toBe('Test Created Item');
-    expect(item.completed).toBe(false);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 99, title: 'New Item', completed: false }),
+    }));
+
+    const validResponse = await app.inject({
+      method: 'POST',
+      url: '/api/items',
+      payload: { title: 'New Item' },
+    });
+    expect(validResponse.statusCode).toBe(201);
   });
 });

@@ -1,29 +1,35 @@
-# Nx Monorepo (Frontend + Backend + SQLite)
+# Nx Monorepo (Frontend + Backend + DB Service)
 
-A modern, high-performance fullstack monorepo managed with [Nx](https://nx.dev) and [pnpm](https://pnpm.io). Designed for independent port declarations and optimized for **Ivy Tendril** stack analysis, verification pipelines (`NpmLint`, `NpmBuild`, `NpmTest`), and review actions.
+A modern, high-performance 3-tier monorepo managed with [Nx](https://nx.dev) and [pnpm](https://pnpm.io). Designed with independent service boundaries, dedicated port declarations via `.env` files, and full optimization for **Ivy Tendril** stack analysis, verification pipelines (`NpmLint`, `NpmBuild`, `NpmTest`), and review actions.
 
 ## 🚀 Tech Stack
 
 - **Monorepo**: [Nx](https://nx.dev) + [pnpm](https://pnpm.io) workspaces
-- **Frontend**: [React 19](https://react.dev), [Vite](https://vite.dev), [Tailwind CSS v4](https://tailwindcss.com), [Lucide React](https://lucide.dev)
-- **Backend**: [Fastify](https://fastify.dev), [TypeScript](https://www.typescriptlang.org), Node.js 24
-- **Database**: [SQLite](https://www.sqlite.org) (`better-sqlite3`), [Drizzle ORM](https://orm.drizzle.team)
-- **Testing**: [Vitest](https://vitest.dev) (Unit & Integration tests)
+- **Frontend (`apps/frontend`)**: [React 19](https://react.dev), [Vite](https://vite.dev), [Tailwind CSS v4](https://tailwindcss.com), [Lucide React](https://lucide.dev)
+- **Backend API (`apps/backend`)**: [Fastify](https://fastify.dev), [TypeScript](https://www.typescriptlang.org), Node.js 24
+- **Database Service (`apps/db-service`)**: [Fastify](https://fastify.dev), [SQLite](https://www.sqlite.org) (`better-sqlite3`), [Drizzle ORM](https://orm.drizzle.team)
+- **Shared Library (`packages/shared`)**: Shared TypeScript models, DTOs, and API contracts
+- **Testing**: [Vitest](https://vitest.dev)
 - **Linting**: ESLint 9 (flat config)
 
 ## 📁 Repository Structure
 
 ```tree
 ├── apps/
-│   ├── backend/               # Fastify API + SQLite Drizzle Layer (Port 3001)
+│   ├── db-service/            # Dedicated SQLite Data Service (Port 3002)
 │   │   ├── src/
-│   │   │   ├── db/            # Schema, SQLite connection, auto-seeding
-│   │   │   ├── index.ts       # Fastify server & routes
+│   │   │   ├── db/            # Drizzle schema, SQLite connection, auto-seeding
+│   │   │   ├── index.ts       # Fastify REST endpoints for SQLite operations
+│   │   │   └── index.test.ts  # Vitest integration tests
+│   │   └── .env.example
+│   ├── backend/               # Backend API Gateway (Port 3001)
+│   │   ├── src/
+│   │   │   ├── index.ts       # Fastify server talking to DB service
 │   │   │   └── index.test.ts  # Vitest integration tests
 │   │   └── .env.example
 │   └── frontend/              # React 19 + Vite Dashboard (Port 3000)
 │       ├── src/
-│       │   ├── App.tsx        # Dashboard UI with SQLite item management
+│       │   ├── App.tsx        # Dashboard displaying 3-tier status & live items
 │       │   └── App.test.tsx   # Vitest React tests
 │       └── .env.example
 ├── packages/
@@ -35,13 +41,13 @@ A modern, high-performance fullstack monorepo managed with [Nx](https://nx.dev) 
 
 ## ⚙️ Port Configuration
 
-Ports can be independently configured via `.env` files in each service:
+Each service declares its own independent port in its dedicated `.env` file:
 
-| Service | Environment Variable | Default Port | Config File |
-|---------|----------------------|--------------|-------------|
-| **Frontend** | `PORT` / `VITE_PORT` | `3000` | `apps/frontend/.env` |
-| **Backend** | `PORT` | `3001` | `apps/backend/.env` |
-| **Vite API Target** | `VITE_API_URL` | `http://localhost:3001` | `apps/frontend/.env` |
+| Service | Environment Variable | Default Port | Target Config | File |
+|---------|----------------------|--------------|---------------|------|
+| **Frontend** | `PORT` / `VITE_PORT` | `3000` | Talks to Backend (`http://localhost:3001`) | `apps/frontend/.env` |
+| **Backend API** | `PORT` | `3001` | Talks to DB Service (`http://localhost:3002`) | `apps/backend/.env` |
+| **DB Service** | `PORT` | `3002` | Manages SQLite directly (`./data/app.db`) | `apps/db-service/.env` |
 
 ## 🛠️ Getting Started
 
@@ -51,19 +57,22 @@ Ports can be independently configured via `.env` files in each service:
 pnpm install
 ```
 
-### 2. Run Both Services (Nx Parallel Dev)
+### 2. Run All Services (Nx Parallel Dev)
 
 ```bash
 pnpm dev
 ```
 
-Or run individual apps:
+Or run individual services:
 
 ```bash
-# Backend only (http://localhost:3001)
+# Database Service (http://localhost:3002)
+pnpm dev:db
+
+# Backend API Gateway (http://localhost:3001)
 pnpm dev:backend
 
-# Frontend only (http://localhost:3000)
+# Frontend Dashboard (http://localhost:3000)
 pnpm dev:frontend
 ```
 
@@ -87,7 +96,9 @@ pnpm lint
 
 ## 🔍 Ivy Tendril Integration
 
-This repository is tailored for Ivy Tendril:
-- **Stack Analyzer**: Automatically classifies components into `fe` (React/Vite/Tailwind), `be` (Fastify/Node), `db` (SQLite), and `test` (Vitest).
+- **Stack Analyzer**: Automatically classifies the 3 distinct application components:
+  - `apps/frontend`: `fe` (React/Vite/Tailwind/Testing Library/Vitest)
+  - `apps/backend`: `be` (Fastify/Node/Vitest)
+  - `apps/db-service`: `db` (SQLite/Drizzle ORM/Fastify/Vitest)
 - **Verifications**: Root and workspace scripts adhere to Tendril's `NpmLint`, `NpmBuild`, and `NpmTest` verification conventions.
 - **Review Actions**: Each workspace contains standard `dev` scripts compatible with Tendril's worktree launching and `--open` flags.

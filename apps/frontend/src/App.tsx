@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Item, HealthResponse } from '@proj/shared';
-import { Server, Database, CheckCircle2, Circle, Plus, RefreshCw, Layers } from 'lucide-react';
+import { Server, Database, Globe, CheckCircle2, Circle, Plus, RefreshCw, Layers } from 'lucide-react';
 
 export default function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -91,22 +91,25 @@ export default function App() {
       <header className="mb-10 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium mb-4">
           <Layers className="w-3.5 h-3.5" />
-          <span>Nx Monorepo • Tendril Ready</span>
+          <span>Nx Monorepo • 3-Tier Architecture</span>
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-white mb-2">
           Ivy Interactive Monorepo
         </h1>
         <p className="text-slate-400 text-base max-w-xl mx-auto">
-          Modern React 19 + Vite frontend communicating with Fastify backend and SQLite database layer.
+          Frontend (Port 3000) &rarr; Backend Gateway (Port 3001) &rarr; DB Service (Port 3002) with SQLite.
         </p>
       </header>
 
-      {/* Service Status Cards */}
+      {/* 3 Service Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Frontend Card */}
+        {/* Tier 1: Frontend */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Frontend</span>
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <Globe className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Frontend</span>
+            </div>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Online
@@ -115,10 +118,10 @@ export default function App() {
           <div className="text-2xl font-bold text-white mb-1">
             Port {window.location.port || '3000'}
           </div>
-          <p className="text-xs text-slate-500">Vite • React 19 • Tailwind v4</p>
+          <p className="text-xs text-slate-500">React 19 • Vite • Tailwind v4</p>
         </div>
 
-        {/* Backend Card */}
+        {/* Tier 2: Backend API */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -140,30 +143,32 @@ export default function App() {
           <div className="text-2xl font-bold text-white mb-1">
             Port {health?.port ?? '3001'}
           </div>
-          <p className="text-xs text-slate-500">Fastify • TypeScript • Node 24</p>
+          <p className="text-xs text-slate-500">Fastify • Gateway • Port 3001</p>
         </div>
 
-        {/* Database Card */}
+        {/* Tier 3: Database Service */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              <Database className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Database</span>
+              <Database className="w-3.5 h-3.5 text-amber-400" />
+              <span>DB Service</span>
             </div>
-            {health?.database === 'connected' ? (
+            {health?.dbService?.status === 'ok' ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Connected
+                Online
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                Standby
+                {health?.database === 'connected' ? 'Connected' : 'Offline'}
               </span>
             )}
           </div>
-          <div className="text-2xl font-bold text-white mb-1">SQLite</div>
-          <p className="text-xs text-slate-500">better-sqlite3 • Drizzle ORM</p>
+          <div className="text-2xl font-bold text-white mb-1">
+            Port {health?.dbService?.port ?? '3002'}
+          </div>
+          <p className="text-xs text-slate-500">Fastify • SQLite • Drizzle ORM</p>
         </div>
       </div>
 
@@ -172,7 +177,7 @@ export default function App() {
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
           <div>
             <h2 className="text-lg font-semibold text-white">Database Items</h2>
-            <p className="text-xs text-slate-400">Live data persisted across sessions in SQLite</p>
+            <p className="text-xs text-slate-400">Items stored via DB Service in SQLite</p>
           </div>
           <button
             onClick={() => {

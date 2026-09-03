@@ -23,6 +23,43 @@ importers:
       '@proj/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
+      fastify:
+        specifier: ^5.2.1
+        version: 5.12.1
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.21.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.20.1
+      eslint:
+        specifier: ^9.21.0
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: ^4.19.3
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.25.0
+        version: 8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.7
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(tsx@4.23.13)(yaml@2.9.0)
+
+  apps/db-service:
+    dependencies:
+      '@fastify/cors':
+        specifier: ^10.0.2
+        version: 10.1.0
+      '@proj/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       better-sqlite3:
         specifier: ^11.8.1
         version: 11.10.0
@@ -4284,7 +4321,7 @@ snapshots:
 
   dotenv-expand@11.0.7:
     dependencies:
-      dotenv: 16.4.7
+      dotenv: 16.6.1
 
   dotenv@16.4.7: {}
 

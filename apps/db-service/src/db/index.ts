@@ -15,10 +15,10 @@ if (!fs.existsSync(dir)) {
 
 export const sqlite = new Database(resolvedPath);
 
-// Enable WAL mode for better performance
+// Enable WAL mode for performance
 sqlite.pragma('journal_mode = WAL');
 
-// Ensure schema exists automatically
+// Ensure schema exists
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +46,7 @@ if (count.count === 0) {
   });
   insert.run({
     title: 'Test review actions from worktree',
-    description: 'Launch frontend and backend on configured ports',
+    description: 'Launch frontend, backend, and db service on configured ports',
     completed: 0,
     created_at: new Date().toISOString(),
   });

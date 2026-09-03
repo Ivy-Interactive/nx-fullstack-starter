@@ -17,10 +17,20 @@ export interface UpdateItemDto {
   completed?: boolean;
 }
 
+export interface DbServiceHealth {
+  service: string;
+  status: string;
+  port: number;
+  database: 'connected' | 'disconnected';
+  timestamp: string;
+  uptime: number;
+}
+
 export interface HealthResponse {
   status: 'ok' | 'degraded';
   timestamp: string;
   uptime: number;
   port: number;
   database: 'connected' | 'disconnected';
+  dbService?: DbServiceHealth;
 }
