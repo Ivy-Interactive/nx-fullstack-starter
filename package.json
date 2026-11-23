@@ -13,8 +13,8 @@
     "lint": "nx run-many -t lint"
   },
   "devDependencies": {
-    "nx": "^21.0.0",
-    "typescript": "^5.8.2"
+    "nx": "^24.0.6",
+    "typescript": "^7.0.2"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

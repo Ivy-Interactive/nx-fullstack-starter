@@ -11,22 +11,22 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.2",
+    "@fastify/cors": "^11.4.3",
     "@proj/shared": "workspace:*",
-    "better-sqlite3": "^11.8.1",
-    "dotenv": "^16.4.7",
-    "drizzle-orm": "^0.39.3",
-    "fastify": "^5.2.1"
+    "better-sqlite3": "^13.2.0",
+    "dotenv": "^18.0.10",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.12.8"
   },
   "devDependencies": {
-    "@eslint/js": "^9.21.0",
-    "@types/better-sqlite3": "^7.6.12",
-    "@types/node": "^22.13.5",
-    "drizzle-kit": "^0.30.4",
-    "eslint": "^9.21.0",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.25.0",
-    "vitest": "^3.0.7"
+    "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.6",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^10.15.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.1.1"
   }
 }
